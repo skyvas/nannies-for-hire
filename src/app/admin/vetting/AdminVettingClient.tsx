@@ -77,13 +77,6 @@ export function AdminVettingClient({ pendingSitters: initialPending, approvedSit
 
       if (res.ok) {
         setPendingSitters((prev) => prev.filter((s) => s.id !== sitterId));
-        if (action === 'APPROVE') {
-          // Find the approved sitter data from previous pending list
-          const approvedSitter = pendingSitters.find((s) => s.id === sitterId);
-          if (approvedSitter) {
-            setApprovedSittersState((prev) => [...prev, approvedSitter]);
-          }
-        }
         setMessage(action === 'APPROVE' ? 'Caregiver Approved & Verified' : 'Caregiver Profile Rejected');
       }
     } catch (e) {
