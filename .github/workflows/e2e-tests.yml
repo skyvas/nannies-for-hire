@@ -29,14 +29,16 @@ jobs:
       - name: Install Playwright Browsers with OS Dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Build Next.js Production App
-        run: npm run build
+      - name: Sync Database Schema & Generate Prisma Client
+        run: |
+          npx prisma generate
+          npx prisma db push
 
       - name: Seed SQLite Database
         run: npm run db:seed
+
+      - name: Build Next.js Production App
+        run: npm run build
 
       - name: Run Playwright E2E Tests
         run: npx playwright test
