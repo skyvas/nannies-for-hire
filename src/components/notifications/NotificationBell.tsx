@@ -89,6 +89,13 @@ function formatCreatedTime(dateString: string): { time: string; date: string; fu
   }
 }
 
+// Pure helper exported for testing
+export function computeUnread(notifs: RichNotification[], ths: UnreadThread[]) {
+  const notifUnread = notifs.filter((n) => n.readAt === null && n.type !== 'CHAT_MESSAGE').length;
+  const chatUnread = ths.reduce((acc, t) => acc + (t.count || 0), 0);
+  return notifUnread + chatUnread;
+}
+
 interface NotificationBellProps {
   userRole?: 'PARENT' | 'SITTER' | 'ADMIN';
 }
@@ -101,6 +108,15 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Keep totalUnread always derived from the latest notifications and threads
+  useEffect(() => {
+    setTotalUnread((prev) => {
+      const val = computeUnread(notifications, threads);
+      if (val === prev) return prev;
+      return val;
+    });
+  }, [notifications, threads]);
 
   // Fetch notifications & chat threads
   const fetchAllNotifications = async () => {
@@ -132,7 +148,9 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
         setThreads(chatThreads);
       }
 
-      setTotalUnread(notifUnread + chatUnread);
+      // totalUnread will be derived from notifications & threads via effect
+      // this avoids incremental drift and race conditions
+      // setNotifications/setThreads already called above; effect will recompute
     } catch (e) {
       console.error('Failed to fetch notifications', e);
     }
@@ -157,80 +175,104 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
 
   // Notification Management Actions
   const handleMarkRead = async (id: string) => {
-    // Optimistic UI update
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
-    );
-    setTotalUnread((prev) => Math.max(0, prev - 1));
+    // Optimistic UI update with rollback on failure
+    setNotifications((prev) => {
+      const prevCopy = prev.slice();
+      const next = prevCopy.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
+      return next;
+    });
 
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'MARK_READ', id }),
       });
-      fetchAllNotifications();
+      if (!res.ok) {
+        // If server rejected, refetch to get canonical state
+        await fetchAllNotifications();
+      } else {
+        // Re-sync to be safe
+        fetchAllNotifications();
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to mark read, refreshing list', e);
+      await fetchAllNotifications();
     }
   };
 
   const handleMarkUnread = async (id: string) => {
-    // Optimistic UI update
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, readAt: null } : n))
-    );
-    setTotalUnread((prev) => prev + 1);
+    // Optimistic UI update with rollback on failure
+    setNotifications((prev) => {
+      const prevCopy = prev.slice();
+      const next = prevCopy.map((n) => (n.id === id ? { ...n, readAt: null } : n));
+      return next;
+    });
 
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'MARK_UNREAD', id }),
       });
-      fetchAllNotifications();
+      if (!res.ok) {
+        await fetchAllNotifications();
+      } else {
+        fetchAllNotifications();
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to mark unread, refreshing list', e);
+      await fetchAllNotifications();
     }
   };
 
   const handleDeleteNotification = async (id: string) => {
-    const targetNotif = notifications.find((n) => n.id === id);
-    const wasUnread = targetNotif && targetNotif.readAt === null;
-
+    const prevSnapshot = notifications.slice();
+    // Optimistic remove
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    if (wasUnread) {
-      setTotalUnread((prev) => Math.max(0, prev - 1));
-    }
 
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'DELETE', id }),
       });
-      fetchAllNotifications();
+      if (!res.ok) {
+        // rollback on failure
+        setNotifications(prevSnapshot);
+        await fetchAllNotifications();
+      } else {
+        fetchAllNotifications();
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to delete notification, rolling back', e);
+      setNotifications(prevSnapshot);
+      await fetchAllNotifications();
     }
   };
 
   const handleMarkAllRead = async () => {
     setIsProcessing(true);
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() }))
-    );
-    setTotalUnread(threads.reduce((acc, t) => acc + t.count, 0));
+    const prevSnapshot = notifications.slice();
+    setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
 
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'MARK_ALL_READ' }),
       });
-      fetchAllNotifications();
+      if (!res.ok) {
+        // rollback
+        setNotifications(prevSnapshot);
+        await fetchAllNotifications();
+      } else {
+        fetchAllNotifications();
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed mark all read, rolling back', e);
+      setNotifications(prevSnapshot);
+      await fetchAllNotifications();
     } finally {
       setIsProcessing(false);
     }
@@ -375,19 +417,15 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
                             <h4 className="font-bold text-xs text-slate-900 truncate">
                               {notif.title}
                             </h4>
-                            <span
-                              className="text-[10px] text-slate-500 font-semibold shrink-0 flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200"
-                              title={`Created: ${formatCreatedTime(notif.createdAt).full} (${formatRelativeTime(notif.createdAt)})`}
-                            >
-                              <Clock className="w-3 h-3 text-slate-400" />
-                              {formatCreatedTime(notif.createdAt).full}
-                            </span>
                           </div>
                           <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-relaxed">
                             {notif.content}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1 text-[10px] text-slate-400 font-medium">
-                            <span>Created {formatCreatedTime(notif.createdAt).time}</span>
+                            <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200" title={`Created: ${formatCreatedTime(notif.createdAt).full} (${formatRelativeTime(notif.createdAt)})`}>
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              {formatCreatedTime(notif.createdAt).full}
+                            </span>
                             <span>•</span>
                             <span className="text-slate-500">{formatRelativeTime(notif.createdAt)}</span>
                           </div>
