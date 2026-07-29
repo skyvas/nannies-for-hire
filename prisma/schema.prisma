@@ -1,0 +1,155 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?
+  role         String   @default("PARENT") // PARENT, SITTER, ADMIN
+  firstName    String
+  lastName     String
+  phone        String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  householdMembers HouseholdMember[]
+  sitterProfile    SitterProfile?
+  givenReviews     Review[]          @relation("ReviewAuthor")
+  receivedReviews  Review[]          @relation("ReviewTarget")
+  messages         Message[]
+}
+
+model Household {
+  id           String            @id @default(uuid())
+  familyName   String
+  address      String
+  city         String
+  neighborhood String
+  postalCode   String
+  createdAt    DateTime          @default(now())
+
+  members  HouseholdMember[]
+  children Child[]
+  bookings Booking[]
+}
+
+model HouseholdMember {
+  id           String    @id @default(uuid())
+  householdId  String
+  userId       String
+  relationship String    // "Primary Parent", "Guardian", "Spouse"
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, userId])
+}
+
+model Child {
+  id             String    @id @default(uuid())
+  householdId    String
+  firstName      String
+  birthDate      DateTime
+  gender         String?
+  allergies      String?
+  medicalNotes   String?
+  bedtimeRoutine String?
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+}
+
+model SitterProfile {
+  id                 String               @id @default(uuid())
+  userId             String               @unique
+  bio                String
+  headline           String
+  baseHourlyRate     Float
+  extraChildRate     Float                @default(2.0)
+  yearsExperience    Int
+  cprCertified       Boolean              @default(false)
+  hasVehicle         Boolean              @default(false)
+  languages          String               // Comma separated
+  verificationStatus String               @default("PENDING_VERIFICATION") // DRAFT, PENDING_VERIFICATION, APPROVED, REJECTED
+  idDocumentUrl      String?
+  referenceNotes     String?
+  averageRating      Float                @default(5.0)
+  totalReviews       Int                  @default(0)
+  createdAt          DateTime             @default(now())
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availability SitterAvailability[]
+  bookings     Booking[]
+}
+
+model SitterAvailability {
+  id              String        @id @default(uuid())
+  sitterProfileId String
+  dayOfWeek       Int           // 0 = Sunday, 6 = Saturday
+  startTime       String        // "17:00"
+  endTime         String        // "23:00"
+
+  sitterProfile SitterProfile @relation(fields: [sitterProfileId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id                 String   @id @default(uuid())
+  householdId        String
+  sitterProfileId    String
+  status             String   @default("REQUESTED") // REQUESTED, CONFIRMED, DECLINED, EXPIRED, IN_PROGRESS, COMPLETED, SETTLED, CANCELLED
+
+  startDateTime      DateTime
+  endDateTime        DateTime
+  numChildren        Int
+  hourlyRate         Float
+  extraChildRate     Float
+  subtotalAmount     Float
+  platformFee        Float
+  totalAmount        Float
+
+  actualStartTime    DateTime?
+  actualEndTime      DateTime?
+  cancellationReason String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  household     Household     @relation(fields: [householdId], references: [id])
+  sitterProfile SitterProfile @relation(fields: [sitterProfileId], references: [id])
+  messages      Message[]
+  reviews       Review[]
+}
+
+model Message {
+  id        String    @id @default(uuid())
+  bookingId String
+  senderId  String
+  content   String
+  imageUrl  String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sender  User    @relation(fields: [senderId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String
+  authorId  String
+  targetId  String
+  rating    Int
+  comment   String
+  tags      String?
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  author  User    @relation("ReviewAuthor", fields: [authorId], references: [id])
+  target  User    @relation("ReviewTarget", fields: [targetId], references: [id])
+}
