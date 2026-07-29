@@ -70,3 +70,79 @@ export const vettingActionSchema = z.object({
     message: 'Invalid action.',
   }),
 });
+
+export const nannyApplicationDocumentSchema = z.object({
+  documentType: z.enum([
+    'GOVT_ID',
+    'RESUME',
+    'CPR_CERT',
+    'FIRST_AID_CERT',
+    'BACKGROUND_CHECK_AUTH',
+    'DRIVERS_LICENSE',
+    'AUTO_INSURANCE',
+    'REFERENCES',
+    'PROOF_OF_ADDRESS',
+    'PROFESSIONAL_CERTS',
+    'VACCINATION_RECORDS',
+  ]),
+  fileName: z.string().min(1, 'Filename required'),
+  storagePath: z.string().min(1, 'Storage path required'),
+  fileSize: z.number().nonnegative(),
+  mimeType: z.string().min(1, 'Mime type required'),
+});
+
+export const createNannyApplicationSchema = z.object({
+  firstName: z.string().min(1, 'First Name is required'),
+  lastName: z.string().min(1, 'Last Name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(7, 'Phone number is required'),
+  dob: z.string().min(1, 'Date of Birth is required'),
+  address: z.string().min(1, 'Address is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().default('BC'),
+  postalCode: z.string().min(3, 'Postal Code is required'),
+  emergencyContact: z.string().min(1, 'Emergency Contact name is required'),
+  emergencyPhone: z.string().min(7, 'Emergency Contact phone is required'),
+
+  // Professional Information
+  yearsExperience: z.coerce.number().min(0),
+  childcareTypes: z.union([z.array(z.string()), z.string()]),
+  infantExp: z.boolean().default(false),
+  toddlerExp: z.boolean().default(false),
+  specialNeedsExp: z.boolean().default(false),
+  languages: z.string().min(1, 'Languages spoken are required'),
+  education: z.string().min(1, 'Education background is required'),
+  certifications: z.string().optional(),
+  availability: z.string().min(1, 'Availability is required'),
+  preferredSchedule: z.string().optional(),
+  willingToTravel: z.boolean().default(false),
+  driverLicenseStatus: z.string().min(1, 'Driver license status required'),
+  ownVehicle: z.boolean().default(false),
+  cprCertified: z.boolean().default(false),
+  firstAidCertified: z.boolean().default(false),
+
+  // Agreements
+  agreementsAccepted: z.boolean().refine((val) => val === true, {
+    message: 'You must accept the terms and agreements',
+  }),
+  electronicSignature: z.string().min(1, 'Electronic signature is required'),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+
+  // Documents
+  documents: z.array(nannyApplicationDocumentSchema).min(1, 'At least one document is required'),
+});
+
+export const updateNannyApplicationStatusSchema = z.object({
+  status: z.enum([
+    'SUBMITTED',
+    'UNDER_REVIEW',
+    'DOCUMENTS_REQUESTED',
+    'INTERVIEW_SCHEDULED',
+    'BACKGROUND_CHECK',
+    'APPROVED',
+    'REJECTED',
+    'ARCHIVED',
+  ]),
+  notes: z.string().optional(),
+});

@@ -99,13 +99,22 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              <div className="w-full sm:w-auto">
+              <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
                 <Link
                   href="/search"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-7 py-3.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Search className="w-4 h-4" />
                   Search Sitters
+                </Link>
+                <Link
+                  id="hero-apply-nanny-btn"
+                  data-testid="hero-apply-nanny-btn"
+                  href="/sitter/apply"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Award className="w-4 h-4" />
+                  Become a Nanny
                 </Link>
               </div>
             </div>
