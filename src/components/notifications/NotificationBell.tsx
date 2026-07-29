@@ -380,7 +380,6 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
                             {notif.content}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1 text-[10px] text-slate-400 font-medium">
-                            <span>Created {formatCreatedTime(notif.createdAt).time}</span>
                             <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200" title={`Created: ${formatCreatedTime(notif.createdAt).full} (${formatRelativeTime(notif.createdAt)})`}>
                               <Clock className="w-3 h-3 text-slate-400" />
                               {formatCreatedTime(notif.createdAt).full}
