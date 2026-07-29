@@ -375,19 +375,16 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
                             <h4 className="font-bold text-xs text-slate-900 truncate">
                               {notif.title}
                             </h4>
-                            <span
-                              className="text-[10px] text-slate-500 font-semibold shrink-0 flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200"
-                              title={`Created: ${formatCreatedTime(notif.createdAt).full} (${formatRelativeTime(notif.createdAt)})`}
-                            >
-                              <Clock className="w-3 h-3 text-slate-400" />
-                              {formatCreatedTime(notif.createdAt).full}
-                            </span>
                           </div>
                           <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-relaxed">
                             {notif.content}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1 text-[10px] text-slate-400 font-medium">
                             <span>Created {formatCreatedTime(notif.createdAt).time}</span>
+                            <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200" title={`Created: ${formatCreatedTime(notif.createdAt).full} (${formatRelativeTime(notif.createdAt)})`}>
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              {formatCreatedTime(notif.createdAt).full}
+                            </span>
                             <span>•</span>
                             <span className="text-slate-500">{formatRelativeTime(notif.createdAt)}</span>
                           </div>
