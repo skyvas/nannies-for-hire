@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../../../lib/db';
+import { db } from '@/lib/db';
+import { updateBookingStatusSchema } from '@/lib/validations';
 
 export async function POST(
   request: Request,
@@ -7,7 +8,14 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { action } = await request.json(); // "ACCEPT", "DECLINE", "START_SITTING", "END_SITTING"
+    const body = await request.json();
+    const parseResult = updateBookingStatusSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Invalid action.' }, { status: 400 });
+    }
+
+    const { action } = parseResult.data;
 
     const booking = await db.booking.findUnique({
       where: { id },

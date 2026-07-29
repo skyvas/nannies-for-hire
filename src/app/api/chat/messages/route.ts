@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/db';
-import { getCurrentSession } from '../../../../lib/adapters/auth';
-import { chatStream } from '../../../../lib/services/chatStream';
+import { db } from '@/lib/db';
+import { getCurrentSession } from '@/lib/adapters/auth';
+import { chatStream } from '@/lib/services/chatStream';
+import { getMessageQuerySchema, createMessageSchema } from '@/lib/validations';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const bookingId = searchParams.get('bookingId');
+  const parseResult = getMessageQuerySchema.safeParse({
+    bookingId: searchParams.get('bookingId'),
+  });
 
-  if (!bookingId) {
-    return NextResponse.json({ error: 'Missing bookingId' }, { status: 400 });
+  if (!parseResult.success) {
+    return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Missing bookingId' }, { status: 400 });
   }
+
+  const { bookingId } = parseResult.data;
 
   const messages = await db.message.findMany({
     where: { bookingId },
@@ -38,10 +43,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { bookingId, content, imageUrl } = body;
+    const parseResult = createMessageSchema.safeParse(body);
 
-    if (!bookingId || (!content && !imageUrl)) {
-      return NextResponse.json({ error: 'Message content or image required' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Message content or image required' }, { status: 400 });
+    }
+
+    const { bookingId, content, imageUrl, attachments } = parseResult.data;
+
+    // Determine stored media value (JSON array if attachments provided, otherwise single imageUrl)
+    let storedImageUrl: string | null = null;
+    if (attachments && attachments.length > 0) {
+      storedImageUrl = JSON.stringify(attachments);
+    } else if (imageUrl) {
+      storedImageUrl = imageUrl;
     }
 
     // Verify booking access
@@ -69,7 +84,7 @@ export async function POST(req: NextRequest) {
         bookingId,
         senderId: session.user.id,
         content: content || '',
-        imageUrl: imageUrl || null,
+        imageUrl: storedImageUrl,
       },
       include: {
         sender: {

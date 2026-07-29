@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/db';
-import { getCurrentSession } from '../../../lib/adapters/auth';
+import { db } from '@/lib/db';
+import { getCurrentSession } from '@/lib/adapters/auth';
 
 export async function GET(req: NextRequest) {
   try {

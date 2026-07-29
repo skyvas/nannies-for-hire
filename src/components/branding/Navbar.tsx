@@ -52,6 +52,13 @@ export function Navbar({ currentUser, pendingVettingCount = 0 }: NavbarProps) {
                   Find Babysitters
                 </Link>
                 <Link
+                  href="/sitter/apply"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition-colors"
+                >
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  Apply as a Nanny
+                </Link>
+                <Link
                   href="/parent/household"
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-100/80 transition-colors"
                 >

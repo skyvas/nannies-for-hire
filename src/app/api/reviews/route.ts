@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../lib/db';
-import { getCurrentSession } from '../../../lib/adapters/auth';
+import { db } from '@/lib/db';
+import { getCurrentSession } from '@/lib/adapters/auth';
+import { createReviewSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
     const session = await getCurrentSession();
-    const { bookingId, targetId, rating, comment, tags } = await request.json();
+    const body = await request.json();
+    const parseResult = createReviewSchema.safeParse(body);
 
-    if (!bookingId || !targetId || !rating || !comment) {
-      return NextResponse.json({ error: 'Missing required review fields.' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Missing required review fields.' }, { status: 400 });
     }
+
+    const { bookingId, targetId, rating, comment, tags } = parseResult.data;
 
     const review = await db.review.create({
       data: {

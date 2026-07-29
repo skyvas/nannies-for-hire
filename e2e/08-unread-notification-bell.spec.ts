@@ -25,6 +25,17 @@ test.describe('Notification Bell & Unread Message Counter (Zero False Positives)
     await sitterOption.first().click();
     await sitterPage.waitForLoadState('networkidle');
 
+    // Clear any existing booking notifications from prior test runs to ensure a clean baseline
+    await sitterPage.evaluate(() =>
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAllRead: true }),
+      })
+    );
+    await sitterPage.reload();
+    await sitterPage.waitForLoadState('networkidle');
+
     // 4. Verify Sitter's bell has ZERO false positives initially (no badge visible)
     const sitterBadge = sitterPage.locator('[data-testid="notification-badge"]');
     await expect(sitterBadge).not.toBeVisible();
