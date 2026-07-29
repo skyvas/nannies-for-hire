@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { db } from '../../db';
+import { db } from '@/lib/db';
 
 export interface AuthSession {
   user: {
@@ -17,22 +17,24 @@ export async function getCurrentSession(): Promise<AuthSession> {
   const demoUserId = cookieStore.get('demo_user_id')?.value;
 
   if (!demoUserId) {
-    // Default to the primary demo parent if no cookie is set yet
-    const defaultParent = await db.user.findFirst({
-      where: { role: 'PARENT' },
-    });
+    // Only default to demo parent in development mode
+    if (process.env.NODE_ENV === 'development') {
+      const defaultParent = await db.user.findFirst({
+        where: { role: 'PARENT' },
+      });
 
-    if (defaultParent) {
-      return {
-        user: {
-          id: defaultParent.id,
-          email: defaultParent.email,
-          firstName: defaultParent.firstName,
-          lastName: defaultParent.lastName,
-          role: defaultParent.role as 'PARENT' | 'SITTER' | 'ADMIN',
-          avatarUrl: defaultParent.avatarUrl,
-        },
-      };
+      if (defaultParent) {
+        return {
+          user: {
+            id: defaultParent.id,
+            email: defaultParent.email,
+            firstName: defaultParent.firstName,
+            lastName: defaultParent.lastName,
+            role: defaultParent.role as 'PARENT' | 'SITTER' | 'ADMIN',
+            avatarUrl: defaultParent.avatarUrl,
+          },
+        };
+      }
     }
 
     return { user: null };

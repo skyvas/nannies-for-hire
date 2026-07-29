@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../lib/db';
+import { db } from '@/lib/db';
+import { createChildSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
-    const { householdId, firstName, birthDate, gender, allergies, medicalNotes, bedtimeRoutine } =
-      await request.json();
+    const body = await request.json();
+    const parseResult = createChildSchema.safeParse(body);
 
-    if (!householdId || !firstName || !birthDate) {
-      return NextResponse.json({ error: 'Missing required child profile fields.' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Missing required child profile fields.' }, { status: 400 });
     }
+
+    const { householdId, firstName, birthDate, gender, allergies, medicalNotes, bedtimeRoutine } = parseResult.data;
 
     const child = await db.child.create({
       data: {

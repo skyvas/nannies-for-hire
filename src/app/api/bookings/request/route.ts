@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../../lib/db';
-import { getCurrentSession } from '../../../../lib/adapters/auth';
-import { calculateBookingPrice } from '../../../../lib/services/pricing';
+import { db } from '@/lib/db';
+import { getCurrentSession } from '@/lib/adapters/auth';
+import { calculateBookingPrice } from '@/lib/services/pricing';
+import { createBookingRequestSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
     const session = await getCurrentSession();
-    const { sitterProfileId, householdId, startDateTime, endDateTime, numChildren, durationHours } =
-      await request.json();
+    const body = await request.json();
+    const parseResult = createBookingRequestSchema.safeParse(body);
 
-    if (!sitterProfileId || !startDateTime || !endDateTime) {
-      return NextResponse.json({ error: 'Missing required booking fields.' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: parseResult.error.issues[0]?.message || 'Missing required booking fields.' },
+        { status: 400 }
+      );
     }
+
+    const { sitterProfileId, householdId, startDateTime, endDateTime, numChildren, durationHours } = parseResult.data;
 
     // Validate that requested booking start time is not in the past
     const requestedStart = new Date(startDateTime);

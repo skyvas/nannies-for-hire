@@ -1,11 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
-import { db } from '../lib/db';
-import { getCurrentSession } from '../lib/adapters/auth';
+import { db } from '@/lib/db';
+import { getCurrentSession } from '@/lib/adapters/auth';
 import { brandConfig } from '../../brand.config';
-import { Navbar } from '../components/branding/Navbar';
-import { Footer } from '../components/branding/Footer';
-import { DemoRoleSwitcher } from '../components/demo/DemoRoleSwitcher';
+import { Navbar } from '@/components/branding/Navbar';
+import { Footer } from '@/components/branding/Footer';
+import { DemoRoleSwitcher } from '@/components/demo/DemoRoleSwitcher';
 import { Search, ShieldCheck, HeartHandshake, Star, MapPin, Calendar, Clock, Sparkles, CheckCircle2, DollarSign, Award, ChevronRight } from 'lucide-react';
 
 export const revalidate = 0; // Dynamic server component

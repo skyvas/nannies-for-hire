@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../../../lib/db';
+import { db } from '@/lib/db';
+import { vettingActionSchema } from '@/lib/validations';
 
 export async function POST(
   request: Request,
@@ -7,11 +8,14 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const { action } = await request.json(); // "APPROVE" or "REJECT"
+    const body = await request.json();
+    const parseResult = vettingActionSchema.safeParse(body);
 
-    if (!['APPROVE', 'REJECT'].includes(action)) {
-      return NextResponse.json({ error: 'Invalid action.' }, { status: 400 });
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Invalid action.' }, { status: 400 });
     }
+
+    const { action } = parseResult.data;
 
     const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
 
