@@ -158,14 +158,18 @@ model Review {
 }
 
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String
-  type      String    // NEW_BOOKING_REQUEST, BOOKING_ACCEPTED, BOOKING_DECLINED, CHAT_MESSAGE, NEW_NANNY_APPLICATION
-  title     String
-  content   String
-  bookingId String?
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  id          String    @id @default(uuid())
+  userId      String
+  type        String    // NEW_BOOKING_REQUEST, BOOKING_ACCEPTED, BOOKING_DECLINED, CHAT_MESSAGE, NEW_NANNY_APPLICATION, BOOKING_CLOCK_UPDATE, REVIEW_SUBMITTED
+  title       String
+  content     String
+  bookingId   String?
+  targetRoute String?   // Explicit deep link route e.g. /sitter/jobs?bookingId=...
+  actorName   String?   // e.g. "David Smith"
+  actorAvatar String?   // Avatar image URL
+  metadata    String?   // JSON metadata string
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -242,68 +246,3 @@ model ApplicationDocument {
   application        NannyApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 }
 
-model NannyApplication {
-  id                  String                @id @default(uuid())
-  applicationNumber   String                @unique // e.g. "APP-849201"
-  applicantId         String?
-  firstName           String
-  lastName            String
-  email               String
-  phone               String
-  dob                 DateTime
-  address             String
-  city                String
-  state               String                @default("BC")
-  postalCode          String
-  emergencyContact    String
-  emergencyPhone      String
-
-  // Professional Information
-  yearsExperience     Int
-  childcareTypes      String                // JSON array or comma-separated
-  infantExp           Boolean               @default(false)
-  toddlerExp          Boolean               @default(false)
-  specialNeedsExp     Boolean               @default(false)
-  languages           String
-  education           String
-  certifications      String?
-  availability        String
-  preferredSchedule   String?
-  willingToTravel     Boolean               @default(false)
-  driverLicenseStatus String
-  ownVehicle          Boolean               @default(false)
-  cprCertified        Boolean               @default(false)
-  firstAidCertified   Boolean               @default(false)
-
-  // Agreements & Signatures
-  agreementsAccepted  Boolean               @default(true)
-  electronicSignature String
-  signedAt            DateTime              @default(now())
-  ipAddress           String?
-  userAgent           String?
-
-  // Workflow & Status
-  status              String                @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, DOCUMENTS_REQUESTED, INTERVIEW_SCHEDULED, BACKGROUND_CHECK, APPROVED, REJECTED, ARCHIVED
-  notes               String?
-  submittedAt         DateTime              @default(now())
-  reviewedAt          DateTime?
-  reviewedBy          String?
-  updatedAt           DateTime              @updatedAt
-
-  // Relations
-  documents           ApplicationDocument[]
-}
-
-model ApplicationDocument {
-  id                 String           @id @default(uuid())
-  applicationId      String
-  documentType       String           // GOVT_ID, RESUME, CPR_CERT, FIRST_AID_CERT, BACKGROUND_CHECK_AUTH, DRIVERS_LICENSE, AUTO_INSURANCE, REFERENCES, PROOF_OF_ADDRESS, PROFESSIONAL_CERTS, VACCINATION_RECORDS
-  fileName           String
-  storagePath        String
-  fileSize           Int
-  mimeType           String
-  verificationStatus String           @default("PENDING") // PENDING, VERIFIED, REJECTED
-  uploadedAt         DateTime         @default(now())
-
-  application        NannyApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-}

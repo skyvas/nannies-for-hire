@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       take: 50,
     });
 
-    const totalUnread = notifications.filter((n) => n.readAt === null).length;
+    const totalUnread = notifications.filter((n) => n.readAt === null && n.type !== 'CHAT_MESSAGE').length;
 
     return NextResponse.json({
       totalUnread,
