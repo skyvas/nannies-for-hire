@@ -7,10 +7,19 @@ import { DemoRoleSwitcher } from '../../../components/demo/DemoRoleSwitcher';
 import { AdminVettingClient } from './AdminVettingClient';
 import { ShieldCheck, UserCheck, AlertCircle } from 'lucide-react';
 
+import { redirect } from 'next/navigation';
+
 export const revalidate = 0;
 
 export default async function AdminVettingPage() {
   const session = await getCurrentSession();
+
+  if (session.user?.role === 'PARENT') {
+    redirect('/parent/bookings');
+  }
+  if (session.user?.role === 'SITTER') {
+    redirect('/sitter/jobs');
+  }
 
   // Fetch pending vetting sitters
   const pendingSitters = await db.sitterProfile.findMany({

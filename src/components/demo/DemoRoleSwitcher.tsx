@@ -21,16 +21,25 @@ export function DemoRoleSwitcher({ currentUserId, demoUsers }: DemoRoleSwitcherP
 
   const currentUser = demoUsers.find((u) => u.id === currentUserId) || demoUsers[0];
 
-  const handleSwitchUser = async (userId: string) => {
-    setLoadingId(userId);
+  const handleSwitchUser = async (targetUser: DemoUserOption) => {
+    setLoadingId(targetUser.id);
     try {
       const res = await fetch('/api/auth/demo-switch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId: targetUser.id }),
       });
       if (res.ok) {
-        window.location.reload();
+        const path = window.location.pathname;
+        if (targetUser.role === 'SITTER' && path.startsWith('/parent')) {
+          window.location.href = '/sitter/jobs';
+        } else if (targetUser.role === 'PARENT' && (path.startsWith('/sitter') || path.startsWith('/admin'))) {
+          window.location.href = '/parent/bookings';
+        } else if (targetUser.role === 'ADMIN' && (path.startsWith('/parent') || path.startsWith('/sitter'))) {
+          window.location.href = '/admin/vetting';
+        } else {
+          window.location.reload();
+        }
       }
     } catch (e) {
       console.error('Failed to switch user', e);
@@ -68,7 +77,7 @@ export function DemoRoleSwitcher({ currentUserId, demoUsers }: DemoRoleSwitcherP
           <div className="absolute bottom-12 right-0 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <div className="bg-slate-900 text-white p-3 border-b border-slate-800">
               <p className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Switch Demo Role Instantantly
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Switch Demo Role Instantly
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Test the platform as Parent, Caregiver, or Platform Administrator.
@@ -81,7 +90,7 @@ export function DemoRoleSwitcher({ currentUserId, demoUsers }: DemoRoleSwitcherP
                 return (
                   <button
                     key={user.id}
-                    onClick={() => handleSwitchUser(user.id)}
+                    onClick={() => handleSwitchUser(user)}
                     disabled={loadingId === user.id}
                     className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between group ${
                       isSelected ? 'bg-slate-100/90 font-medium' : 'hover:bg-slate-50'

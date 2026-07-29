@@ -19,29 +19,33 @@ test.describe('Admin Vetting Queue & Financial Analytics', () => {
     // 2. Verify Vetting Page Header
     await expect(page.locator('h1')).toContainText(/Caregiver Vetting & Verification Queue/i);
 
-    // 3. Handle pending approve button if present or verify approved state idempotently
-    const approveButton = page.locator('[data-testid="approve-sitter-btn"]').first();
-    const isPending = await approveButton.isVisible({ timeout: 2000 }).catch(() => false);
+    // 3. Locate Approve Button for pending applicant
+    const approveBtn = page.getByRole('button', { name: /Approve Caregiver/i }).first();
+    const canApprove = await approveBtn.isVisible();
 
-    if (isPending) {
-      const responsePromise = page.waitForResponse(
-        (resp) => resp.url().includes('/api/admin/vetting') && resp.status() === 200
+    if (canApprove) {
+      // 4. Click Approve Caregiver & Verify Badge
+      const responsePromise = page.waitForResponse((resp) =>
+        resp.url().includes('/api/admin/vetting') && resp.status() === 200
       );
-      await approveButton.click();
+      await approveBtn.click();
       await responsePromise;
-      await expect(page.getByText(/Sitter profile successfully APPROVED/i)).toBeVisible();
+
+      await expect(page.getByText(/Caregiver Approved & Verified/i)).toBeVisible();
     } else {
-      // Idempotent fallback: Chloe Tremblay was approved in prior run
+      // Fallback if Chloe Tremblay was already approved in prior test run
       await expect(page.getByText(/Active Approved Sitters/i)).toBeVisible();
       await expect(page.getByText(/Chloe Tremblay/i)).toBeVisible();
     }
   });
 
   test('should allow Platform Admin to view financial analytics & 15% platform commission reports', async ({ page }) => {
-    await page.goto('/admin/disputes');
+    await page.goto('/admin/vetting');
 
     // Switch Demo Role to Admin
     await switchDemoRole(page, 'Platform Admin');
+
+    await page.goto('/admin/disputes');
 
     // Verify Financial Analytics Page
     await expect(page.locator('h1')).toContainText(/Marketplace Financials & Dispute Monitor/i);

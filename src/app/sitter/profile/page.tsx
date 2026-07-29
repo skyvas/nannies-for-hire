@@ -7,10 +7,19 @@ import { DemoRoleSwitcher } from '../../../components/demo/DemoRoleSwitcher';
 import { SitterProfileClient } from './SitterProfileClient';
 import { UserCheck, ShieldCheck, Calendar, Award } from 'lucide-react';
 
+import { redirect } from 'next/navigation';
+
 export const revalidate = 0;
 
 export default async function SitterProfilePage() {
   const session = await getCurrentSession();
+
+  if (session.user?.role === 'PARENT') {
+    redirect('/parent/bookings');
+  }
+  if (session.user?.role === 'ADMIN') {
+    redirect('/admin/vetting');
+  }
 
   let sitterProfile = null;
   if (session.user) {
