@@ -41,6 +41,24 @@ export async function POST(request: Request) {
       },
     });
 
+    // Dispatch notification to sitter for newly submitted review
+    try {
+      await db.notification.create({
+        data: {
+          userId: targetId,
+          type: 'NEW_REVIEW',
+          title: `★ New ${rating}-Star Review Received!`,
+          content: `${session.user ? `${session.user.firstName} ${session.user.lastName}` : 'A parent'} left you a review: "${comment.slice(0, 80)}${comment.length > 80 ? '...' : ''}"`,
+          bookingId,
+          targetRoute: `/sitter/jobs`,
+          actorName: session.user ? `${session.user.firstName} ${session.user.lastName}` : 'Parent',
+          actorAvatar: session.user?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        },
+      });
+    } catch (notifErr) {
+      console.error('Non-blocking review notification error:', notifErr);
+    }
+
     return NextResponse.json({ success: true, review });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create review.' }, { status: 500 });

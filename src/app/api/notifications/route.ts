@@ -6,26 +6,28 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getCurrentSession();
     if (!session.user) {
-      return NextResponse.json({ totalUnread: 0, notifications: [] });
+      return NextResponse.json({ totalUnread: 0, totalCount: 0, notifications: [] });
     }
 
     const userId = session.user.id;
 
-    const unreadNotifications = await db.notification.findMany({
-      where: {
-        userId,
-        readAt: null,
-      },
+    // Fetch all notifications for persistent history viewing
+    const notifications = await db.notification.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
 
+    const totalUnread = notifications.filter((n) => n.readAt === null).length;
+
     return NextResponse.json({
-      totalUnread: unreadNotifications.length,
-      notifications: unreadNotifications,
+      totalUnread,
+      totalCount: notifications.length,
+      notifications,
     });
   } catch (error: any) {
     console.error('Error fetching notifications:', error);
-    return NextResponse.json({ totalUnread: 0, notifications: [] }, { status: 500 });
+    return NextResponse.json({ totalUnread: 0, totalCount: 0, notifications: [] }, { status: 500 });
   }
 }
 
@@ -36,31 +38,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, bookingId, markAllRead } = await req.json();
+    const userId = session.user.id;
+    const body = await req.json();
+    const { action, id, bookingId } = body;
 
-    if (markAllRead) {
+    // Legacy parameters compatibility
+    if (body.markAllRead || action === 'MARK_ALL_READ') {
       await db.notification.updateMany({
-        where: { userId: session.user.id, readAt: null },
+        where: { userId, readAt: null },
         data: { readAt: new Date() },
       });
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'DELETE_ALL') {
+      await db.notification.deleteMany({
+        where: { userId },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'DELETE' && id) {
+      await db.notification.deleteMany({
+        where: { id, userId },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'MARK_UNREAD' && id) {
+      await db.notification.updateMany({
+        where: { id, userId },
+        data: { readAt: null },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // Default MARK_READ
     if (id) {
-      await db.notification.update({
-        where: { id },
+      await db.notification.updateMany({
+        where: { id, userId },
         data: { readAt: new Date() },
       });
     } else if (bookingId) {
       await db.notification.updateMany({
-        where: { userId: session.user.id, bookingId, readAt: null },
+        where: { userId, bookingId, readAt: null },
         data: { readAt: new Date() },
       });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error updating notification read status:', error);
+    console.error('Error updating notification management:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

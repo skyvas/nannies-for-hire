@@ -25,14 +25,21 @@ test.describe('Notification Bell & Unread Message Counter (Zero False Positives)
     await sitterOption.first().click();
     await sitterPage.waitForLoadState('networkidle');
 
-    // Clear any existing booking notifications from prior test runs to ensure a clean baseline
-    await sitterPage.evaluate(() =>
-      fetch('/api/notifications', {
+    // Clear any existing booking notifications and chat messages from prior test runs to ensure a clean baseline
+    await sitterPage.evaluate(async () => {
+      // Delete ALL notifications (not just mark-read) so no stale entries inflate the unread badge
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'DELETE_ALL' }),
+      });
+      // Mark all chat threads read
+      await fetch('/api/chat/read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAllRead: true }),
-      })
-    );
+      });
+    });
     await sitterPage.reload();
     await sitterPage.waitForLoadState('networkidle');
 

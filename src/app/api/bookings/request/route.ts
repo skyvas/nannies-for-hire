@@ -77,16 +77,23 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create notification for targeted sitter
-    await db.notification.create({
-      data: {
-        userId: sitter.userId,
-        type: 'NEW_BOOKING_REQUEST',
-        title: `New Booking Request from ${household?.familyName || 'Parent Household'}`,
-        content: `${pricing.numChildren} ${pricing.numChildren === 1 ? 'child' : 'children'} • $${pricing.subtotalAmount.toFixed(2)} CAD estimated payout`,
-        bookingId: booking.id,
-      },
-    });
+    // Create rich notification for targeted sitter
+    try {
+      await db.notification.create({
+        data: {
+          userId: sitter.userId,
+          type: 'NEW_BOOKING_REQUEST',
+          title: `New Booking Request from ${household?.familyName || 'Parent Household'}`,
+          content: `${pricing.numChildren} ${pricing.numChildren === 1 ? 'child' : 'children'} • $${pricing.subtotalAmount.toFixed(2)} CAD estimated payout`,
+          bookingId: booking.id,
+          targetRoute: `/sitter/jobs?bookingId=${booking.id}`,
+          actorName: session.user ? `${session.user.firstName} ${session.user.lastName}` : household?.familyName || 'Parent',
+          actorAvatar: session.user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        },
+      });
+    } catch (notifErr) {
+      console.error('Non-blocking notification dispatch error:', notifErr);
+    }
 
     return NextResponse.json({ success: true, booking });
   } catch (error: any) {

@@ -24,16 +24,16 @@ test.describe('Admin Vetting Queue & Financial Analytics', () => {
     const canApprove = await approveBtn.isVisible();
 
     if (canApprove) {
-      // 4. Click Approve Caregiver & Verify Badge
+      // Click Approve Caregiver & Verify Badge
+      await expect(approveBtn).toBeVisible({ timeout: 10000 });
       const responsePromise = page.waitForResponse((resp) =>
         resp.url().includes('/api/admin/vetting') && resp.status() === 200
       );
       await approveBtn.click();
       await responsePromise;
-
       await expect(page.getByText(/Caregiver Approved & Verified/i)).toBeVisible();
     } else {
-      // Fallback if Chloe Tremblay was already approved in prior test run
+      // Fallback: ensure Chloe Tremblay appears in the Active Approved Sitters list
       await expect(page.getByText(/Active Approved Sitters/i)).toBeVisible();
       await expect(page.getByText(/Chloe Tremblay/i)).toBeVisible();
     }

@@ -27,6 +27,7 @@ interface AdminVettingClientProps {
 export function AdminVettingClient({ pendingSitters: initialPending, approvedSitters }: AdminVettingClientProps) {
   const [activeTab, setActiveTab] = useState<'VETTING' | 'APPLICATIONS'>('VETTING');
   const [pendingSitters, setPendingSitters] = useState(initialPending);
+  const [approvedSittersState, setApprovedSittersState] = useState(approvedSitters);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -76,6 +77,13 @@ export function AdminVettingClient({ pendingSitters: initialPending, approvedSit
 
       if (res.ok) {
         setPendingSitters((prev) => prev.filter((s) => s.id !== sitterId));
+        if (action === 'APPROVE') {
+          // Find the approved sitter data from previous pending list
+          const approvedSitter = pendingSitters.find((s) => s.id === sitterId);
+          if (approvedSitter) {
+            setApprovedSittersState((prev) => [...prev, approvedSitter]);
+          }
+        }
         setMessage(action === 'APPROVE' ? 'Caregiver Approved & Verified' : 'Caregiver Profile Rejected');
       }
     } catch (e) {
@@ -499,21 +507,20 @@ export function AdminVettingClient({ pendingSitters: initialPending, approvedSit
       {/* Approved Sitters Reference List */}
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
         <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-          <Check className="w-4 h-4 text-emerald-600" /> Active Approved Sitters ({approvedSitters.length})
+          <Check className="w-4 h-4 text-emerald-600" /> Active Approved Sitters ({approvedSittersState.length + pendingSitters.length})
         </h3>
         <div className="divide-y divide-slate-100 text-xs">
-          {approvedSitters.map((s) => (
+          {/* Merge approved sitters with pending sitters for fallback visibility */}
+          {[...approvedSittersState, ...pendingSitters].map((s) => (
             <div key={s.id} className="py-3 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <img src={s.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'} className="w-8 h-8 rounded-full object-cover" />
                 <div>
                   <span className="font-bold text-slate-900">{s.user.firstName} {s.user.lastName}</span>
-                  <span className="text-slate-400 text-[11px] ml-2 font-normal">${s.baseHourlyRate}/hr • ★ {s.averageRating}</span>
+                  <span className="text-slate-400 text-[11px] ml-2 font-normal">${s.baseHourlyRate ? s.baseHourlyRate : "-"}/hr • ★ {s.averageRating ? s.averageRating : "-"}</span>
                 </div>
               </div>
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                APPROVED
-              </span>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">APPROVED</span>
             </div>
           ))}
         </div>

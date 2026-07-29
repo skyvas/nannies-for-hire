@@ -121,7 +121,7 @@ export function Navbar({ currentUser, pendingVettingCount = 0 }: NavbarProps) {
 
           {/* User Status / Account Indicator + Notification Bell */}
           <div className="flex items-center gap-3">
-            <NotificationBell />
+            <NotificationBell userRole={role} />
 
             <div className="hidden sm:flex items-center gap-2.5 bg-slate-50 pl-3 pr-2 py-1.5 rounded-full border border-slate-200">
               <span className="text-xs font-semibold text-slate-800">
