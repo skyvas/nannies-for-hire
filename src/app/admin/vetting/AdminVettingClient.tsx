@@ -90,6 +90,8 @@ export function AdminVettingClient({ pendingSitters: initialPending, approvedSit
                       <XCircle className="w-4 h-4" /> Reject Profile
                     </button>
                     <button
+                      id={`approve-sitter-btn-${sitter.id}`}
+                      data-testid="approve-sitter-btn"
                       onClick={() => handleAction(sitter.id, 'APPROVE')}
                       disabled={processingId === sitter.id}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition-colors flex items-center gap-1.5"

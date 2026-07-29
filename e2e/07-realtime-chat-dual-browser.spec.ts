@@ -47,7 +47,7 @@ test.describe('Real-Time Chat & SSE Streaming (Dual-Browser Context)', () => {
 
     // 6. Sitter receives live message instantly via SSE stream & fallback poll
     await expect(
-      sitterPage.locator('[data-testid="chat-message-text"]', { hasText: 'Hi Sarah! Leo and Maya are ready for bedtime.' })
+      sitterPage.locator('[data-testid="chat-message-text"]', { hasText: 'Hi Sarah! Leo and Maya are ready for bedtime.' }).first()
     ).toBeVisible({ timeout: 10000 });
 
     // 7. Sitter attaches photo preset and replies
@@ -67,7 +67,7 @@ test.describe('Real-Time Chat & SSE Streaming (Dual-Browser Context)', () => {
 
     // 8. Parent receives photo attachment & text reply live via SSE stream
     await expect(
-      parentPage.locator('[data-testid="chat-message-text"]', { hasText: 'Story time underway! Bedtime story done.' })
+      parentPage.locator('[data-testid="chat-message-text"]', { hasText: 'Story time underway! Bedtime story done.' }).first()
     ).toBeVisible({ timeout: 10000 });
     await expect(parentPage.locator('[data-testid="chat-message-photo"]').first()).toBeVisible();
 

@@ -84,11 +84,20 @@ export function SitterSearchClient({
       )
     : null;
 
+  // Today in Vancouver (America/Vancouver timezone format YYYY-MM-DD)
+  const todayInVancouver = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Vancouver' });
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSitter) return;
     if (!bookingDate) {
       setBookingError('Please select a valid booking date.');
+      return;
+    }
+
+    const startDateTime = new Date(`${bookingDate}T${bookingTime}:00`);
+    if (startDateTime.getTime() < Date.now() - 60000) {
+      setBookingError('Booking start time cannot be in the past. Please select a future date and time in Vancouver.');
       return;
     }
 
@@ -343,6 +352,7 @@ export function SitterSearchClient({
                     <input
                       type="date"
                       required
+                      min={todayInVancouver}
                       value={bookingDate}
                       onChange={(e) => setBookingDate(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"

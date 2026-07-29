@@ -13,7 +13,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required booking fields.' }, { status: 400 });
     }
 
-    // Find sitter profile to get rate rules
+    // Validate that requested booking start time is not in the past
+    const requestedStart = new Date(startDateTime);
+    if (isNaN(requestedStart.getTime()) || requestedStart < new Date(Date.now() - 60000)) {
+      return NextResponse.json(
+        { error: 'Booking start time cannot be in the past. Please select a future time in Vancouver.' },
+        { status: 400 }
+      );
+    }
+
+    // Find sitter profile to get rate rules & userId
     const sitter = await db.sitterProfile.findUnique({
       where: { id: sitterProfileId },
     });
@@ -41,6 +50,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No parent household available.' }, { status: 400 });
     }
 
+    const household = await db.household.findUnique({
+      where: { id: targetHouseholdId },
+    });
+
     // Create booking transaction in REQUESTED state
     const booking = await db.booking.create({
       data: {
@@ -55,6 +68,17 @@ export async function POST(request: Request) {
         subtotalAmount: pricing.subtotalAmount,
         platformFee: pricing.platformFee,
         totalAmount: pricing.totalAmount,
+      },
+    });
+
+    // Create notification for targeted sitter
+    await db.notification.create({
+      data: {
+        userId: sitter.userId,
+        type: 'NEW_BOOKING_REQUEST',
+        title: `New Booking Request from ${household?.familyName || 'Parent Household'}`,
+        content: `${pricing.numChildren} ${pricing.numChildren === 1 ? 'child' : 'children'} • $${pricing.subtotalAmount.toFixed(2)} CAD estimated payout`,
+        bookingId: booking.id,
       },
     });
 

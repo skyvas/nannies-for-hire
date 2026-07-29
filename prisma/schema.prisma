@@ -24,6 +24,7 @@ model User {
   givenReviews     Review[]          @relation("ReviewAuthor")
   receivedReviews  Review[]          @relation("ReviewTarget")
   messages         Message[]
+  notifications    Notification[]
 }
 
 model Household {
@@ -152,4 +153,17 @@ model Review {
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   author  User    @relation("ReviewAuthor", fields: [authorId], references: [id])
   target  User    @relation("ReviewTarget", fields: [targetId], references: [id])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String    // NEW_BOOKING_REQUEST, BOOKING_ACCEPTED, BOOKING_DECLINED, CHAT_MESSAGE
+  title     String
+  content   String
+  bookingId String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
