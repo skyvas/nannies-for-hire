@@ -7,10 +7,19 @@ import { DemoRoleSwitcher } from '../../../components/demo/DemoRoleSwitcher';
 import { ParentBookingsClient } from './ParentBookingsClient';
 import { Calendar, Clock, Heart } from 'lucide-react';
 
+import { redirect } from 'next/navigation';
+
 export const revalidate = 0;
 
 export default async function ParentBookingsPage() {
   const session = await getCurrentSession();
+
+  if (session.user?.role === 'SITTER') {
+    redirect('/sitter/jobs');
+  }
+  if (session.user?.role === 'ADMIN') {
+    redirect('/admin/vetting');
+  }
 
   let household = null;
   if (session.user) {

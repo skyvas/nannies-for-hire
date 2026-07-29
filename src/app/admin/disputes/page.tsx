@@ -6,10 +6,19 @@ import { Footer } from '../../../components/branding/Footer';
 import { DemoRoleSwitcher } from '../../../components/demo/DemoRoleSwitcher';
 import { DollarSign, TrendingUp, Calendar, AlertTriangle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
+import { redirect } from 'next/navigation';
+
 export const revalidate = 0;
 
 export default async function AdminDisputesPage() {
   const session = await getCurrentSession();
+
+  if (session.user?.role === 'PARENT') {
+    redirect('/parent/bookings');
+  }
+  if (session.user?.role === 'SITTER') {
+    redirect('/sitter/jobs');
+  }
 
   // Fetch all bookings
   const bookings = await db.booking.findMany({
