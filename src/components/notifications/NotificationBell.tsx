@@ -89,6 +89,13 @@ function formatCreatedTime(dateString: string): { time: string; date: string; fu
   }
 }
 
+// Pure helper exported for testing
+export function computeUnread(notifs: RichNotification[], ths: UnreadThread[]) {
+  const notifUnread = notifs.filter((n) => n.readAt === null && n.type !== 'CHAT_MESSAGE').length;
+  const chatUnread = ths.reduce((acc, t) => acc + (t.count || 0), 0);
+  return notifUnread + chatUnread;
+}
+
 interface NotificationBellProps {
   userRole?: 'PARENT' | 'SITTER' | 'ADMIN';
 }
@@ -101,13 +108,6 @@ export function NotificationBell({ userRole = 'PARENT' }: NotificationBellProps)
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Compute unread count from current state (notifications + chat threads)
-  const computeUnread = (notifs: RichNotification[], ths: UnreadThread[]) => {
-    const notifUnread = notifs.filter((n) => n.readAt === null && n.type !== 'CHAT_MESSAGE').length;
-    const chatUnread = ths.reduce((acc, t) => acc + (t.count || 0), 0);
-    return notifUnread + chatUnread;
-  };
 
   // Keep totalUnread always derived from the latest notifications and threads
   useEffect(() => {
