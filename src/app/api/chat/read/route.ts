@@ -10,12 +10,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { bookingId } = await req.json();
-    if (!bookingId) {
-      return NextResponse.json({ error: 'Missing bookingId' }, { status: 400 });
-    }
+    const body = await req.json().catch(() => ({}));
+    const { bookingId, markAllRead } = body;
 
     const now = new Date();
+
+    if (markAllRead) {
+      const userHousehold = await db.householdMember.findFirst({
+        where: { userId: session.user.id },
+        select: { householdId: true },
+      });
+      const userSitterProfile = await db.sitterProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      const bookings = await db.booking.findMany({
+        where: {
+          OR: [
+            ...(userHousehold ? [{ householdId: userHousehold.householdId }] : []),
+            ...(userSitterProfile ? [{ sitterProfileId: userSitterProfile.id }] : []),
+          ],
+        },
+        select: { id: true },
+      });
+      const bookingIds = bookings.map((b) => b.id);
+
+      if (bookingIds.length > 0) {
+        await db.message.updateMany({
+          where: {
+            bookingId: { in: bookingIds },
+            senderId: { not: session.user.id },
+            readAt: null,
+          },
+          data: { readAt: now },
+        });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (!bookingId) {
+      return NextResponse.json({ error: 'Missing bookingId or markAllRead' }, { status: 400 });
+    }
 
     // Mark unread messages sent by the other party as read
     const updateResult = await db.message.updateMany({

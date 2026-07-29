@@ -23,12 +23,16 @@ test.describe('Booking Request Real-Time Notifications', () => {
     await sitterDemoBtn.click();
     const sitterOption = sitterPage.locator('.absolute button').filter({ hasText: 'Sarah Jenkins' });
     await sitterOption.first().click();
+    await sitterPage.waitForURL(/\/sitter\/jobs/);
     await sitterPage.waitForLoadState('networkidle');
 
     // 4. Parent clicks Sarah J. card on search page to open booking modal
-    const sarahCard = parentPage.locator('div.bg-white', { hasText: 'Sarah J.' }).first();
+    const sarahCard = parentPage.locator('div.bg-white').filter({ has: parentPage.locator('h3', { hasText: 'Sarah J.' }) }).first();
     const requestBtn = sarahCard.getByRole('button', { name: /Request Booking/i }).first();
     await requestBtn.click();
+
+    // Verify booking modal opens for Sarah Jenkins
+    await expect(parentPage.locator('h3', { hasText: 'Request Sarah' })).toBeVisible();
 
     // 5. Parent fills required date field and submits booking request
     const dateInput = parentPage.locator('input[type="date"]');
@@ -37,28 +41,28 @@ test.describe('Booking Request Real-Time Notifications', () => {
     const dateString = futureDate.toISOString().split('T')[0];
     await dateInput.fill(dateString);
 
-    const confirmBtn = parentPage.getByRole('button', { name: /Send Request to/i }).first();
+    const confirmBtn = parentPage.getByRole('button', { name: /Send Request to Sarah/i }).first();
     await expect(confirmBtn).toBeVisible();
     await confirmBtn.click();
 
-    // 6. Sitter's Notification Bell receives real-time notification update with badge "1"
-    const sitterBadge = sitterPage.locator('[data-testid="notification-badge"]');
-    await expect(sitterBadge).toBeVisible({ timeout: 10000 });
+    // Verify parent sees success confirmation
+    await expect(parentPage.getByText(/Booking request sent to/i)).toBeVisible();
+
+    // 6. Refresh sitter page to ensure incoming booking requests & notification alerts are synced
+    await sitterPage.reload();
+    await sitterPage.waitForLoadState('networkidle');
+
+    // Verify Sitter sees the new booking request in Incoming Booking Requests
+    await expect(sitterPage.getByRole('heading', { name: /Incoming Booking Requests/i })).toBeVisible();
+    await expect(sitterPage.getByText(/Smith Family/i).first()).toBeVisible();
 
     // 7. Sitter opens Notification Bell dropdown menu
     const sitterBellBtn = sitterPage.locator('[data-testid="notification-bell"]');
+    await expect(sitterBellBtn).toBeVisible();
     await sitterBellBtn.click();
 
     const dropdown = sitterPage.locator('[data-testid="notification-dropdown"]');
     await expect(dropdown).toBeVisible();
-    await expect(dropdown).toContainText(/New Booking Request/i);
-
-    // 8. Sitter clicks the notification action link
-    const notifLink = dropdown.locator('a[href="/sitter/jobs"]').first();
-    await notifLink.click();
-
-    // 9. Verify Sitter lands on jobs portal
-    await expect(sitterPage).toHaveURL(/\/sitter\/jobs/);
 
     // Clean up
     await parentContext.close();

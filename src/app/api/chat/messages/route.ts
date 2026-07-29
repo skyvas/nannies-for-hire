@@ -102,6 +102,35 @@ export async function POST(req: NextRequest) {
     // Broadcast live event via SSE
     chatStream.broadcastMessage(bookingId, newMessage);
 
+    // Create persistent notification for recipient
+    const recipientUserId = isAssignedSitter
+      ? booking.household.members[0]?.userId
+      : booking.sitterProfile.userId;
+
+    if (recipientUserId && recipientUserId !== session.user.id) {
+      const recipientIsParent = isAssignedSitter;
+      const targetRoute = recipientIsParent
+        ? `/parent/bookings?bookingId=${bookingId}`
+        : `/sitter/jobs?bookingId=${bookingId}`;
+
+      try {
+        await db.notification.create({
+          data: {
+            userId: recipientUserId,
+            type: 'CHAT_MESSAGE',
+            title: `New Message from ${session.user.firstName}`,
+            content: content || '📷 Sent a photo attachment',
+            bookingId,
+            targetRoute,
+            actorName: `${session.user.firstName} ${session.user.lastName}`,
+            actorAvatar: session.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          },
+        });
+      } catch (notifErr) {
+        console.error('Non-blocking chat notification error:', notifErr);
+      }
+    }
+
     return NextResponse.json({ success: true, message: newMessage });
   } catch (error: any) {
     console.error('Error posting chat message:', error);
