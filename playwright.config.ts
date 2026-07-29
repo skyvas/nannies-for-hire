@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1, // Sequential execution to maintain clean database state across demo role switches
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: 'list',
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'retain-on-failure',
